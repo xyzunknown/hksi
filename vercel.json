@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/hksi_mindmap.html"
+    }
+  ]
+}
