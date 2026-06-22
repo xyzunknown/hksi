@@ -825,7 +825,67 @@ function S(){
   if(d.examDate==null) d.examDate='';
   return d;
 }
-function save(d){ try{ localStorage.setItem(SKEY, JSON.stringify(d)); }catch(e){} }
+function save(d){ d.lastModified=Date.now(); try{ localStorage.setItem(SKEY, JSON.stringify(d)); }catch(e){} scheduleSync(); }
+function _writeLocal(d){ try{ localStorage.setItem(SKEY, JSON.stringify(d)); }catch(e){} }
+
+/* ---------- 云同步 cloud sync (jsonblob, 免账号) ---------- */
+var SYNC_CFG='hksi_sync_cfg';
+var JB_GET='https://jsonblob.com/api/jsonBlob/';
+var JB_POST='https://jsonblob.com/api/jsonBlob';
+var _syncing=false, _pushTimer=null, _lastSyncMsg='';
+function syncCfg(){ try{ return JSON.parse(localStorage.getItem(SYNC_CFG))||{}; }catch(e){ return {}; } }
+function setSyncCfg(c){ try{ localStorage.setItem(SYNC_CFG, JSON.stringify(c)); }catch(e){} }
+function syncOn(){ var c=syncCfg(); return !!(c.on && c.id); }
+function updateSyncUI(msg){ _lastSyncMsg=msg; var el=document.getElementById('sync-status'); if(el) el.textContent=msg; }
+
+function mergeStore(a,b){
+  a=a||{}; b=b||{}; var out=JSON.parse(JSON.stringify(a));
+  out.qstats=out.qstats||{}; out.notes=out.notes||{}; out.stars=out.stars||{}; out.flags=out.flags||{}; out.wrong=out.wrong||{}; out.days=out.days||{};
+  // notes: keep longer text on conflict
+  var bn=b.notes||{}; Object.keys(bn).forEach(function(id){ if(!out.notes[id] || (bn[id]&&String(bn[id]).length>String(out.notes[id]).length)) out.notes[id]=bn[id]; });
+  // sets union
+  ['stars','flags','wrong'].forEach(function(k){ var bk=b[k]||{}; Object.keys(bk).forEach(function(id){ out[k][id]=1; }); });
+  // qstats: take entry with more attempts
+  var bq=b.qstats||{}; Object.keys(bq).forEach(function(id){ var lo=out.qstats[id], ro=bq[id]; if(!lo || (ro&&ro.n>lo.n)) out.qstats[id]=ro; });
+  // days: max per date
+  var bd=b.days||{}; Object.keys(bd).forEach(function(d){ out.days[d]=Math.max(out.days[d]||0, bd[d]||0); });
+  // mockHistory: concat + dedupe by ts
+  var mh=(out.mockHistory||[]).concat(b.mockHistory||[]); var sn={}; out.mockHistory=mh.filter(function(m){ if(!m||sn[m.ts])return false; sn[m.ts]=1; return true; }).sort(function(x,y){return x.ts-y.ts;});
+  // totals: max
+  out.totals=out.totals||{seen:0,correct:0}; var bt=b.totals||{seen:0,correct:0}; out.totals.seen=Math.max(out.totals.seen||0,bt.seen||0); out.totals.correct=Math.max(out.totals.correct||0,bt.correct||0);
+  // scalars: newer lastModified wins
+  var aLM=a.lastModified||0, bLM=b.lastModified||0;
+  if(bLM>aLM){ if(b.examDate!=null)out.examDate=b.examDate; if(b.dailyTarget!=null)out.dailyTarget=b.dailyTarget; }
+  if(out.dailyTarget==null)out.dailyTarget=50; if(out.examDate==null)out.examDate='';
+  out.lastModified=Math.max(aLM,bLM,Date.now());
+  return out;
+}
+function cloudGet(id){ return fetch(JB_GET+id,{headers:{'Accept':'application/json'}}).then(function(r){ if(!r.ok) throw new Error('读取失败('+r.status+')'); return r.json(); }); }
+function cloudPut(id,data){ return fetch(JB_GET+id,{method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)}).then(function(r){ if(!r.ok) throw new Error('写入失败('+r.status+')'); return true; }); }
+function cloudCreate(data){ return fetch(JB_POST,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)}).then(function(r){ if(!r.ok) throw new Error('创建失败('+r.status+')'); var loc=r.headers.get('Location')||''; var id=loc.split('/').pop(); if(!id) throw new Error('未取得同步码'); return id; }); }
+function scheduleSync(){ if(_syncing||!syncOn())return; if(_pushTimer)clearTimeout(_pushTimer); _pushTimer=setTimeout(syncNow,2500); }
+function syncNow(cb){
+  if(!syncOn()){ if(cb)cb(false); return; }
+  if(_syncing){ if(cb)cb(false); return; }
+  _syncing=true; updateSyncUI('同步中…'); var id=syncCfg().id;
+  cloudGet(id).then(function(remote){ var merged=mergeStore(S(),remote); _writeLocal(merged); return cloudPut(id,merged); })
+  .then(function(){ _syncing=false; updateSyncUI('✓ 已同步 '+new Date().toLocaleTimeString()); if(cb)cb(true); })
+  .catch(function(e){ _syncing=false; updateSyncUI('⚠ 同步失败：'+e.message+'（可改用手动导入/导出）'); if(cb)cb(false); });
+}
+function syncCreate(){
+  updateSyncUI('创建中…');
+  cloudCreate(S()).then(function(id){ setSyncCfg({on:true,id:id}); updateSyncUI('✓ 已开启'); renderDash(); setTimeout(function(){ alert('已生成同步码：\n\n'+id+'\n\n在其他设备的「数据面板 → 云同步」里粘贴这个码即可同步。请妥善保存。'); },50); })
+  .catch(function(e){ updateSyncUI('⚠ 创建失败：'+e.message); alert('创建同步失败：'+e.message+'\n\n可能是网络或服务不可用，可改用「导入/导出」手动同步。'); });
+}
+function syncConnect(){
+  var v=(document.getElementById('sync-code-in')||{}).value; v=(v||'').trim(); if(!v){ alert('请粘贴同步码'); return; }
+  updateSyncUI('连接中…');
+  cloudGet(v).then(function(remote){ var merged=mergeStore(S(),remote); _writeLocal(merged); setSyncCfg({on:true,id:v}); return cloudPut(v,merged); })
+  .then(function(){ updateSyncUI('✓ 已连接并同步'); renderDash(); })
+  .catch(function(e){ updateSyncUI('⚠ 连接失败：'+e.message); alert('连接失败：'+e.message+'\n请确认同步码正确、设备已联网。'); });
+}
+function syncDisconnect(){ if(!confirm('断开云同步？本机进度保留，但不再自动上传/下载。')) return; var c=syncCfg(); c.on=false; setSyncCfg(c); renderDash(); }
+function copySyncCode(){ var id=syncCfg().id; if(!id)return; if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(id).then(function(){ updateSyncUI('同步码已复制'); }); } else { alert('同步码：'+id); } }
 function todayStr(){ var t=new Date(); return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2); }
 function recordAnswer(qid, ok){
   var d=S(); var st=d.qstats[qid]||{n:0,c:0,lastTs:0};
@@ -865,7 +925,7 @@ function toggleSidebar(){ document.body.classList.toggle('sb-open'); }
 
 /* ---------- hub ---------- */
 var curTab='drill';
-function openHub(tab){ buildPool(); document.body.classList.remove('sb-open'); document.getElementById('hub-overlay').classList.add('open'); hubTab(tab||'drill'); }
+function openHub(tab){ buildPool(); document.body.classList.remove('sb-open'); document.getElementById('hub-overlay').classList.add('open'); hubTab(tab||'drill'); if(syncOn()) syncNow(function(ok){ if(ok && (curTab==='dash')) renderDash(); }); }
 function closeHub(){ stopMockTimer(); stopDTimer(); document.getElementById('hub-overlay').classList.remove('open'); document.getElementById('hub-bar').innerHTML=''; }
 function hubTab(tab){
   curTab=tab; stopMockTimer(); stopDTimer();
@@ -988,11 +1048,21 @@ function srsRank(list){ var d=S(); return list.sort(function(a,b){
   var ra=sa?sa.c/sa.n:0, rb=sb?sb.c/sb.n:0; if(ra!==rb)return ra-rb;
   var ta=sa?sa.lastTs:0, tb=sb?sb.lastTs:0; return ta-tb;
 }); }
+function filterSig(){
+  var srcs=[]; document.querySelectorAll('#d-src label.on').forEach(function(l){srcs.push(l.getAttribute('data-src'));});
+  return JSON.stringify({s:srcs.sort(), c:document.getElementById('d-ch').value, sc:dGet('d-scope')});
+}
 function startDrill(){
   var list=drillFilter().slice(); if(!list.length)return;
-  var scope=dGet('d-scope'), order=dGet('d-order');
+  var scope=dGet('d-scope'), order=dGet('d-order'), sig=filterSig();
   if(scope==='srs') srsRank(list); else if(order==='random') shuffle(list);
-  dState={ list:list, i:0, correct:0, done:0, t0:Date.now(), answered:false };
+  dState={ list:list, i:0, correct:0, done:0, t0:Date.now(), answered:false, order:order, sig:sig, justResumed:false };
+  if(order==='seq' && scope!=='srs'){
+    var d=S();
+    if(d.seqResume && d.seqResume.sig===sig){
+      for(var ri=0;ri<list.length;ri++){ if(String(list[ri].id)===String(d.seqResume.lastId)){ dState.i=ri; dState.justResumed=(ri>0); break; } }
+    }
+  }
   startDTimer(); renderDQ();
 }
 function startDTimer(){ stopDTimer(); dTimer=setInterval(updDBar,1000); }
@@ -1001,9 +1071,12 @@ function updDBar(){ if(!dState||curTab!=='drill')return; var acc=dState.done?Mat
   setBar('<span class="ds">进度 <b>'+(dState.i+1)+'/'+dState.list.length+'</b></span><span class="ds">✓ <b>'+dState.correct+'</b></span><span class="ds">✗ <b>'+(dState.done-dState.correct)+'</b></span><span class="ds">正确率 <b>'+acc+'%</b></span><span class="ds">⏱ '+fmt(Date.now()-dState.t0)+'</span>'); }
 function renderDQ(){
   var q=dState.list[dState.i]; dState.answered=false; updDBar();
+  if(dState.order==='seq'){ var sd=S(); sd.seqResume={sig:dState.sig, lastId:String(q.id)}; save(sd); }
+  var resumeHint = dState.justResumed ? '<div class="res" style="background:#eef0ff;color:#2d2d6e;margin-bottom:12px">⏯ 已从上次结束处（第 '+(dState.i+1)+' 题）继续。<button class="linkbtn" onclick="restartSeq()">从头开始</button></div>' : '';
+  dState.justResumed=false;
   var L=['A','B','C','D'], opts='';
   for(var i=0;i<q.opts.length;i++) opts+='<button class="opt" id="o-'+i+'" onclick="answerDQ('+i+')"><span class="ol">'+L[i]+'</span>'+escapeHtml(q.opts[i]||'')+'</button>';
-  wrap('<div class="qcard"><div class="qtags">'+qTags(q)+'</div><div class="qtext">'+hlText(q.q)+'</div>'+opts+
+  wrap('<div class="qcard">'+resumeHint+'<div class="qtags">'+qTags(q)+'</div><div class="qtext">'+hlText(q.q)+'</div>'+opts+
     '<div id="dres"></div>'+qToolsBar(q)+
     '<div class="qnav"><button class="next ghost" id="dnext" onclick="nextDQ()" disabled>先作答 ↓</button></div></div>');
 }
@@ -1018,8 +1091,11 @@ function answerDQ(oi){
   updDBar();
 }
 function nextDQ(){ if(!dState.answered)return; if(dState.i+1>=dState.list.length){ drillSummary(); return; } dState.i++; renderDQ(); }
+function restartSeq(){ var d=S(); if(d.seqResume && d.seqResume.sig===dState.sig){ delete d.seqResume; save(d); } dState.i=0; dState.justResumed=false; renderDQ(); }
 function drillSummary(){
-  stopDTimer(); var wrong=dState.done-dState.correct, acc=dState.done?Math.round(dState.correct/dState.done*100):0;
+  stopDTimer();
+  if(dState.order==='seq'){ var sd=S(); if(sd.seqResume && sd.seqResume.sig===dState.sig){ delete sd.seqResume; save(sd); } }
+  var wrong=dState.done-dState.correct, acc=dState.done?Math.round(dState.correct/dState.done*100):0;
   setBar('');
   wrap('<div class="card" style="text-align:center"><h3>🎉 本轮完成</h3><div class="kpi-row" style="margin-top:18px">'+
     '<div class="kpi"><div class="n">'+dState.done+'</div><div class="l">作答</div></div>'+
@@ -1190,8 +1266,10 @@ function renderDash(){
 
     '<div class="card"><h3>📊 分章掌握度 <span style="font-weight:400;font-size:11px;color:#aaa">（权重为预估，非官方）</span></h3>'+bars+focusHtml+'</div>'+
 
+    syncCard()+
     '<div class="card"><h3>⚙️ 数据管理</h3><div class="hint">错题 '+Object.keys(d.wrong).length+' · 收藏 '+Object.keys(d.stars).length+' · 存疑 '+Object.keys(d.flags).length+' · 笔记 '+Object.keys(d.notes).length+' · 模拟考 '+d.mockHistory.length+' 次</div>'+
-      '<button class="qtool" onclick="exportData()">📤 导出进度(JSON)</button> <button class="qtool" onclick="resetStudy()" style="color:#c0392b;border-color:#f0bcb4">🗑 清空全部记录</button></div>');
+      '<button class="qtool" onclick="exportData()">📤 导出进度</button> <button class="qtool" onclick="document.getElementById(\'import-file\').click()">📥 导入进度(合并)</button> <button class="qtool" onclick="resetStudy()" style="color:#c0392b;border-color:#f0bcb4">🗑 清空全部记录</button>'+
+      '<input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importData(this)"></div>');
 }
 function calcStreak(days){ var c=0,t=new Date(todayStr()); for(var i=0;i<400;i++){ var ds=t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2); if(days[ds]){c++;} else if(i>0){break;} else {/*today none*/} t.setDate(t.getDate()-1); } return c; }
 function last14(days){ var out=[],t=new Date(todayStr()); for(var i=13;i>=0;i--){ var dd=new Date(t); dd.setDate(dd.getDate()-i); var ds=dd.getFullYear()+'-'+('0'+(dd.getMonth()+1)).slice(-2)+'-'+('0'+dd.getDate()).slice(-2); out.push(days[ds]?ds:''); } return out; }
@@ -1200,6 +1278,21 @@ function setTarget(){ var d=S(); var v=parseInt(document.getElementById('dash-tg
 function dashDrillCh(ch){ hubTab('drill'); setTimeout(function(){ var sel=document.getElementById('d-ch'); if(sel){ sel.value=String(ch); dRefresh(); } },40); }
 function resetStudy(){ if(confirm('确定清空所有刷题进度、错题、笔记、模拟考记录？此操作不可恢复。')){ try{localStorage.removeItem(SKEY);}catch(e){} renderDash(); } }
 function exportData(){ var blob=new Blob([localStorage.getItem(SKEY)||'{}'],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='hksi_progress.json'; a.click(); }
+function importData(input){ var f=input.files&&input.files[0]; if(!f)return; var rd=new FileReader(); rd.onload=function(){ try{ var inc=JSON.parse(rd.result); var merged=mergeStore(S(),inc); _writeLocal(merged); if(syncOn())scheduleSync(); alert('导入并合并完成。'); renderDash(); }catch(e){ alert('导入失败：文件格式不对。'); } }; rd.readAsText(f); input.value=''; }
+function syncCard(){
+  var c=syncCfg();
+  if(c.on && c.id){
+    return '<div class="card"><h3>☁️ 云同步 <span style="font-weight:400;font-size:11px;color:#1a7a4a">● 已开启</span></h3>'+
+      '<div class="hint" id="sync-status">'+(_lastSyncMsg||'已连接，打开学习中心或作答后自动同步')+'</div>'+
+      '<div class="row2" style="margin-bottom:10px"><div style="flex:1"><div class="lbl" style="font-size:11.5px;color:#888;margin-bottom:5px">本设备同步码</div><input class="in" style="width:100%;font-family:monospace" value="'+c.id+'" readonly onclick="this.select()"></div></div>'+
+      '<button class="qtool" onclick="syncNow()">🔄 立即同步</button> <button class="qtool" onclick="copySyncCode()">📋 复制同步码</button> <button class="qtool" onclick="syncDisconnect()" style="color:#c0392b;border-color:#f0bcb4">断开</button></div>';
+  }
+  return '<div class="card"><h3>☁️ 云同步 <span style="font-weight:400;font-size:11px;color:#aaa">○ 未开启</span></h3>'+
+    '<div class="hint" id="sync-status">'+(_lastSyncMsg||'开启后，笔记和全部进度会自动在多台设备间同步（需联网）。')+'</div>'+
+    '<div class="fgrp"><div class="lbl">首次使用 / 主设备</div><button class="bigbtn alt" style="max-width:260px" onclick="syncCreate()">生成同步码并开启 →</button></div>'+
+    '<div class="fgrp"><div class="lbl">其他设备 / 已有同步码</div><div class="row2"><input class="in" id="sync-code-in" placeholder="粘贴同步码" style="flex:1;min-width:180px;font-family:monospace"><button class="qtool link" onclick="syncConnect()">连接并同步</button></div></div>'+
+    '<div class="hint" style="margin-top:4px">说明：同步基于免费云存储 jsonblob.com，请妥善保管同步码（持有者可读写你的进度）；若服务不可用，可改用上方「导入/导出」手动同步。</div></div>';
+}
 
 </script>
 </body>
