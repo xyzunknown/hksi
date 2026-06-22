@@ -852,9 +852,9 @@ function mergeStore(a,b){
   var mh=(out.mockHistory||[]).concat(b.mockHistory||[]); var sn={}; out.mockHistory=mh.filter(function(m){ if(!m||sn[m.ts])return false; sn[m.ts]=1; return true; }).sort(function(x,y){return x.ts-y.ts;});
   // totals: max
   out.totals=out.totals||{seen:0,correct:0}; var bt=b.totals||{seen:0,correct:0}; out.totals.seen=Math.max(out.totals.seen||0,bt.seen||0); out.totals.correct=Math.max(out.totals.correct||0,bt.correct||0);
-  // scalars: newer lastModified wins
+  // scalars + 顺序续刷断点: 以最近活跃设备(lastModified更新)为准
   var aLM=a.lastModified||0, bLM=b.lastModified||0;
-  if(bLM>aLM){ if(b.examDate!=null)out.examDate=b.examDate; if(b.dailyTarget!=null)out.dailyTarget=b.dailyTarget; }
+  if(bLM>aLM){ if(b.examDate!=null)out.examDate=b.examDate; if(b.dailyTarget!=null)out.dailyTarget=b.dailyTarget; if(b.seqResume!=null)out.seqResume=b.seqResume; }
   if(out.dailyTarget==null)out.dailyTarget=50; if(out.examDate==null)out.examDate='';
   out.lastModified=Math.max(aLM,bLM,Date.now());
   return out;
