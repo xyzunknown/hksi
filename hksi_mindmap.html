@@ -828,10 +828,9 @@ function S(){
 function save(d){ d.lastModified=Date.now(); try{ localStorage.setItem(SKEY, JSON.stringify(d)); }catch(e){} scheduleSync(); }
 function _writeLocal(d){ try{ localStorage.setItem(SKEY, JSON.stringify(d)); }catch(e){} }
 
-/* ---------- 云同步 cloud sync (jsonblob, 免账号) ---------- */
+/* ---------- 云同步 cloud sync (同源 /api/sync 后端) ---------- */
 var SYNC_CFG='hksi_sync_cfg';
-var JB_GET='https://jsonblob.com/api/jsonBlob/';
-var JB_POST='https://jsonblob.com/api/jsonBlob';
+var SYNC_API='/api/sync';   // 同源后端(Vercel 函数),无跨域问题
 var _syncing=false, _pushTimer=null, _lastSyncMsg='';
 function syncCfg(){ try{ return JSON.parse(localStorage.getItem(SYNC_CFG))||{}; }catch(e){ return {}; } }
 function setSyncCfg(c){ try{ localStorage.setItem(SYNC_CFG, JSON.stringify(c)); }catch(e){} }
@@ -860,9 +859,9 @@ function mergeStore(a,b){
   out.lastModified=Math.max(aLM,bLM,Date.now());
   return out;
 }
-function cloudGet(id){ return fetch(JB_GET+id,{headers:{'Accept':'application/json'}}).then(function(r){ if(!r.ok) throw new Error('读取失败('+r.status+')'); return r.json(); }); }
-function cloudPut(id,data){ return fetch(JB_GET+id,{method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)}).then(function(r){ if(!r.ok) throw new Error('写入失败('+r.status+')'); return true; }); }
-function cloudCreate(data){ return fetch(JB_POST,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)}).then(function(r){ if(!r.ok) throw new Error('创建失败('+r.status+')'); var loc=r.headers.get('Location')||''; var id=loc.split('/').pop(); if(!id) throw new Error('未取得同步码'); return id; }); }
+function cloudGet(id){ return fetch(SYNC_API+'?code='+encodeURIComponent(id),{headers:{'Accept':'application/json'}}).then(function(r){ if(!r.ok) throw new Error('读取失败('+r.status+')'); return r.json(); }); }
+function cloudPut(id,data){ return fetch(SYNC_API+'?code='+encodeURIComponent(id),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(function(r){ if(!r.ok) throw new Error('写入失败('+r.status+')'); return true; }); }
+function cloudCreate(data){ return fetch(SYNC_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(function(r){ if(!r.ok) throw new Error('创建失败('+r.status+')'); return r.json(); }).then(function(j){ if(!j||!j.code) throw new Error('未取得同步码'); return j.code; }); }
 function scheduleSync(){ if(_syncing||!syncOn())return; if(_pushTimer)clearTimeout(_pushTimer); _pushTimer=setTimeout(syncNow,2500); }
 function syncNow(cb){
   if(!syncOn()){ if(cb)cb(false); return; }
@@ -1291,7 +1290,7 @@ function syncCard(){
     '<div class="hint" id="sync-status">'+(_lastSyncMsg||'开启后，笔记和全部进度会自动在多台设备间同步（需联网）。')+'</div>'+
     '<div class="fgrp"><div class="lbl">首次使用 / 主设备</div><button class="bigbtn alt" style="max-width:260px" onclick="syncCreate()">生成同步码并开启 →</button></div>'+
     '<div class="fgrp"><div class="lbl">其他设备 / 已有同步码</div><div class="row2"><input class="in" id="sync-code-in" placeholder="粘贴同步码" style="flex:1;min-width:180px;font-family:monospace"><button class="qtool link" onclick="syncConnect()">连接并同步</button></div></div>'+
-    '<div class="hint" style="margin-top:4px">说明：同步基于免费云存储 jsonblob.com，请妥善保管同步码（持有者可读写你的进度）；若服务不可用，可改用上方「导入/导出」手动同步。</div></div>';
+    '<div class="hint" style="margin-top:4px">说明：同步走本站自己的接口（'+SYNC_API+'），数据存在你自己的云存储里，无跨域问题。请妥善保管同步码（持有者可读写你的进度）；若接口未部署或离线，可改用上方「导入/导出」手动同步。</div></div>';
 }
 
 </script>
