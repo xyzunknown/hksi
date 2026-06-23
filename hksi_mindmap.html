@@ -831,7 +831,7 @@ function _writeLocal(d){ try{ localStorage.setItem(SKEY, JSON.stringify(d)); }ca
 /* ---------- 云同步 cloud sync (同源 /api/sync 后端) ---------- */
 var SYNC_CFG='hksi_sync_cfg';
 var SYNC_API='/api/sync';   // 同源后端(Vercel 函数),无跨域问题
-var _syncing=false, _pushTimer=null, _lastSyncMsg='';
+var _syncing=false, _pushTimer=null, _lastSyncMsg='', _everSynced=false;
 function syncCfg(){ try{ return JSON.parse(localStorage.getItem(SYNC_CFG))||{}; }catch(e){ return {}; } }
 function setSyncCfg(c){ try{ localStorage.setItem(SYNC_CFG, JSON.stringify(c)); }catch(e){} }
 function syncOn(){ var c=syncCfg(); return !!(c.on && c.id); }
@@ -852,24 +852,9 @@ function mergeStore(a,b){
   var mh=(out.mockHistory||[]).concat(b.mockHistory||[]); var sn={}; out.mockHistory=mh.filter(function(m){ if(!m||sn[m.ts])return false; sn[m.ts]=1; return true; }).sort(function(x,y){return x.ts-y.ts;});
   // totals: max
   out.totals=out.totals||{seen:0,correct:0}; var bt=b.totals||{seen:0,correct:0}; out.totals.seen=Math.max(out.totals.seen||0,bt.seen||0); out.totals.correct=Math.max(out.totals.correct||0,bt.correct||0);
-  // 普通设置以最近操作为准；顺序续刷位置则优先保留更靠后的题目，避免旧设备把进度拉回第一题。
+  // scalars + 顺序续刷断点: 以最近活跃设备(lastModified更新)为准
   var aLM=a.lastModified||0, bLM=b.lastModified||0;
-  if(bLM>aLM){ if(b.examDate!=null)out.examDate=b.examDate; if(b.dailyTarget!=null)out.dailyTarget=b.dailyTarget; }
-  var ar=a.seqResume, br=b.seqResume;
-  if(!ar && br) out.seqResume=br;
-  else if(ar && br){
-    var aAt=ar.updatedAt||aLM||0, bAt=br.updatedAt||bLM||0;
-    if(ar.sig===br.sig){
-      // “从头开始”只能由用户明确触发；较新的明确重开可覆盖旧的续刷位置。
-      if(br.reset && bAt>aAt) out.seqResume=br;
-      else if(ar.reset && aAt>bAt) out.seqResume=ar;
-      else {
-        var ai=typeof ar.index==='number'?ar.index:-1, bi=typeof br.index==='number'?br.index:-1;
-        if(bi>ai || (bi===ai && bAt>aAt)) out.seqResume=br;
-        else out.seqResume=ar;
-      }
-    } else if(bAt>aAt) out.seqResume=br;
-  }
+  if(bLM>aLM){ if(b.examDate!=null)out.examDate=b.examDate; if(b.dailyTarget!=null)out.dailyTarget=b.dailyTarget; if(b.seqResume!=null)out.seqResume=b.seqResume; }
   if(out.dailyTarget==null)out.dailyTarget=50; if(out.examDate==null)out.examDate='';
   out.lastModified=Math.max(aLM,bLM,Date.now());
   return out;
@@ -883,7 +868,7 @@ function syncNow(cb){
   if(_syncing){ if(cb)cb(false); return; }
   _syncing=true; updateSyncUI('同步中…'); var id=syncCfg().id;
   cloudGet(id).then(function(remote){ var merged=mergeStore(S(),remote); _writeLocal(merged); return cloudPut(id,merged); })
-  .then(function(){ _syncing=false; updateSyncUI('✓ 已同步 '+new Date().toLocaleTimeString()); if(curTab==='dash') renderDash(); if(cb)cb(true); })
+  .then(function(){ _syncing=false; _everSynced=true; updateSyncUI('✓ 已同步 '+new Date().toLocaleTimeString()); if(cb)cb(true); })
   .catch(function(e){ _syncing=false; updateSyncUI('⚠ 同步失败：'+e.message+'（可改用手动导入/导出）'); if(cb)cb(false); });
 }
 function syncCreate(){
@@ -900,6 +885,21 @@ function syncConnect(){
 }
 function syncDisconnect(){ if(!confirm('断开云同步？本机进度保留，但不再自动上传/下载。')) return; var c=syncCfg(); c.on=false; setSyncCfg(c); renderDash(); }
 function copySyncCode(){ var id=syncCfg().id; if(!id)return; if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(id).then(function(){ updateSyncUI('同步码已复制'); }); } else { alert('同步码：'+id); } }
+
+/* 离开页面/切后台时立即把进度推上云（手机切App、关标签页时尤其重要） */
+(function(){
+  if(typeof document==='undefined')return;
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='hidden' && syncOn()){
+      if(_pushTimer){ clearTimeout(_pushTimer); _pushTimer=null; }
+      if(!_syncing) syncNow();           // 合并后推送（页面后台仍会跑完）
+    }
+  });
+  window.addEventListener('pagehide',function(){
+    // 仅在本会话已成功同步过(本机数据已含云端)才盲推，避免用未拉取的旧数据覆盖云端
+    try{ if(syncOn() && _everSynced){ var id=syncCfg().id; if(id) fetch(SYNC_API+'?code='+encodeURIComponent(id),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S()),keepalive:true}); } }catch(e){}
+  });
+})();
 function todayStr(){ var t=new Date(); return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2); }
 function recordAnswer(qid, ok){
   var d=S(); var st=d.qstats[qid]||{n:0,c:0,lastTs:0};
@@ -1067,17 +1067,23 @@ function filterSig(){
   return JSON.stringify({s:srcs.sort(), c:document.getElementById('d-ch').value, sc:dGet('d-scope')});
 }
 function startDrill(){
-  var list=drillFilter().slice(); if(!list.length)return;
+  // 顺序模式 + 已开同步：先拉云端最新进度，确保断点是最新的（避免换设备时读到本机旧数据）
+  if(syncOn() && dGet('d-order')==='seq' && !_syncing){
+    var sb=document.getElementById('d-start'); if(sb){ sb.disabled=true; sb.textContent='正在同步进度…'; }
+    syncNow(function(){ _startDrillNow(); });
+    return;
+  }
+  _startDrillNow();
+}
+function _startDrillNow(){
+  var list=drillFilter().slice(); if(!list.length){ renderDrillSetup(); return; }
   var scope=dGet('d-scope'), order=dGet('d-order'), sig=filterSig();
   if(scope==='srs') srsRank(list); else if(order==='random') shuffle(list);
   dState={ list:list, i:0, correct:0, done:0, t0:Date.now(), answered:false, order:order, sig:sig, justResumed:false };
   if(order==='seq' && scope!=='srs'){
     var d=S();
     if(d.seqResume && d.seqResume.sig===sig){
-      var ri=-1;
-      if(typeof d.seqResume.index==='number' && d.seqResume.index>=0 && d.seqResume.index<list.length && (!d.seqResume.lastId || String(list[d.seqResume.index].id)===String(d.seqResume.lastId))) ri=d.seqResume.index;
-      if(ri<0) for(var rj=0;rj<list.length;rj++){ if(String(list[rj].id)===String(d.seqResume.lastId)){ ri=rj; break; } }
-      if(ri>=0){ dState.i=ri; dState.justResumed=(ri>0); }
+      for(var ri=0;ri<list.length;ri++){ if(String(list[ri].id)===String(d.seqResume.lastId)){ dState.i=ri; dState.justResumed=(ri>0); break; } }
     }
   }
   startDTimer(); renderDQ();
@@ -1088,6 +1094,7 @@ function updDBar(){ if(!dState||curTab!=='drill')return; var acc=dState.done?Mat
   setBar('<span class="ds">进度 <b>'+(dState.i+1)+'/'+dState.list.length+'</b></span><span class="ds">✓ <b>'+dState.correct+'</b></span><span class="ds">✗ <b>'+(dState.done-dState.correct)+'</b></span><span class="ds">正确率 <b>'+acc+'%</b></span><span class="ds">⏱ '+fmt(Date.now()-dState.t0)+'</span>'); }
 function renderDQ(){
   var q=dState.list[dState.i]; dState.answered=false; updDBar();
+  if(dState.order==='seq'){ var sd=S(); sd.seqResume={sig:dState.sig, lastId:String(q.id)}; save(sd); }
   var resumeHint = dState.justResumed ? '<div class="res" style="background:#eef0ff;color:#2d2d6e;margin-bottom:12px">⏯ 已从上次结束处（第 '+(dState.i+1)+' 题）继续。<button class="linkbtn" onclick="restartSeq()">从头开始</button></div>' : '';
   dState.justResumed=false;
   var L=['A','B','C','D'], opts='';
@@ -1106,12 +1113,11 @@ function answerDQ(oi){
   var nx=document.getElementById('dnext'); nx.classList.remove('ghost'); nx.removeAttribute('disabled'); nx.innerHTML=(dState.i+1>=dState.list.length)?'查看结果 →':'下一题 →';
   updDBar();
 }
-function saveSeqResume(index,reset){ var d=S(), q=dState.list[index]; if(!q)return; d.seqResume={sig:dState.sig,lastId:String(q.id),index:index,updatedAt:Date.now(),reset:!!reset}; save(d); }
-function nextDQ(){ if(!dState.answered)return; if(dState.i+1>=dState.list.length){ drillSummary(); return; } dState.i++; if(dState.order==='seq')saveSeqResume(dState.i,false); renderDQ(); }
-function restartSeq(){ if(dState.order==='seq')saveSeqResume(0,true); dState.i=0; dState.justResumed=false; renderDQ(); }
+function nextDQ(){ if(!dState.answered)return; if(dState.i+1>=dState.list.length){ drillSummary(); return; } dState.i++; renderDQ(); }
+function restartSeq(){ var d=S(); if(d.seqResume && d.seqResume.sig===dState.sig){ delete d.seqResume; save(d); } dState.i=0; dState.justResumed=false; renderDQ(); }
 function drillSummary(){
   stopDTimer();
-  if(dState.order==='seq')saveSeqResume(0,true);
+  if(dState.order==='seq'){ var sd=S(); if(sd.seqResume && sd.seqResume.sig===dState.sig){ delete sd.seqResume; save(sd); } }
   var wrong=dState.done-dState.correct, acc=dState.done?Math.round(dState.correct/dState.done*100):0;
   setBar('');
   wrap('<div class="card" style="text-align:center"><h3>🎉 本轮完成</h3><div class="kpi-row" style="margin-top:18px">'+
