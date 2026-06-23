@@ -868,7 +868,7 @@ function syncNow(cb){
   if(_syncing){ if(cb)cb(false); return; }
   _syncing=true; updateSyncUI('同步中…'); var id=syncCfg().id;
   cloudGet(id).then(function(remote){ var merged=mergeStore(S(),remote); _writeLocal(merged); return cloudPut(id,merged); })
-  .then(function(){ _syncing=false; updateSyncUI('✓ 已同步 '+new Date().toLocaleTimeString()); if(cb)cb(true); })
+  .then(function(){ _syncing=false; updateSyncUI('✓ 已同步 '+new Date().toLocaleTimeString()); if(curTab==='dash') renderDash(); if(cb)cb(true); })
   .catch(function(e){ _syncing=false; updateSyncUI('⚠ 同步失败：'+e.message+'（可改用手动导入/导出）'); if(cb)cb(false); });
 }
 function syncCreate(){
