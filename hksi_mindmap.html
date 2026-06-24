@@ -271,7 +271,55 @@ p { font-size: 12px; color: #555; line-height: 1.75; padding: 2px 0; }
 .qtool.on { background:#eef0ff; border-color:#7a7ad0; color:#2d2d6e; font-weight:700; }
 .qtool.link { background:#e0f7ec; border-color:#9bd9b8; color:#1a7a4a; font-weight:600; }
 .notebox { margin-top:10px; }
-.notebox textarea { width:100%; min-height:54px; border:1px solid #e2e5ed; border-radius:9px; padding:9px 11px; font-size:13px; font-family:inherit; resize:vertical; }
+.note-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:8px; }
+.note-meta { font-size:11px; color:#aaa; }
+.notebox textarea, .note-ta { width:100%; min-height:90px; border:1px solid #e2e5ed; border-radius:9px; padding:10px 12px; font-size:13.5px; line-height:1.6; font-family:inherit; resize:vertical; overflow:hidden; }
+.note-ta:focus { border-color:#7a7ad0; outline:none; }
+
+/* fullscreen note editor */
+#note-modal { display:none; position:fixed; inset:0; z-index:400; background:rgba(20,20,40,.45); }
+#note-modal.open { display:flex; align-items:center; justify-content:center; }
+#note-modal-box { background:#fff; width:min(720px,94vw); height:min(80vh,720px); border-radius:14px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 50px rgba(0,0,0,.3); }
+#note-modal-top { display:flex; align-items:center; gap:12px; padding:13px 18px; background:linear-gradient(135deg,#1a1a2e,#2d2d6e); color:#fff; }
+#note-modal-title { flex:1; font-size:13.5px; color:#e8e8ff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#note-modal-ta { flex:1; border:none; outline:none; padding:18px 20px; font-size:15.5px; line-height:1.75; font-family:inherit; resize:none; }
+#note-modal-meta { padding:8px 18px; font-size:11.5px; color:#999; border-top:1px solid #f0f2f7; }
+#note-modal-toolbar { padding:8px 14px; border-bottom:1px solid #f0f2f7; display:flex; gap:6px; flex-wrap:wrap; background:#fafbfd; }
+#note-modal-toolbar button { border:1px solid #d8dae5; background:#fff; border-radius:7px; padding:6px 11px; font-size:13px; cursor:pointer; font-weight:700; color:#444; }
+#note-modal-toolbar button:hover { border-color:#7a7ad0; color:#2d2d6e; }
+#note-modal-ta { min-height:30%; }
+#note-modal-prev-label { font-size:10.5px; color:#aaa; padding:7px 18px 2px; border-top:1px dashed #eee; }
+#note-modal-prev { padding:2px 18px 10px; overflow:auto; max-height:34%; }
+
+/* markdown toolbar (inline) + rendered markdown */
+.md-toolbar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
+.md-toolbar button { border:1px solid #d8dae5; background:#fff; border-radius:7px; padding:5px 10px; font-size:12.5px; cursor:pointer; color:#444; font-weight:700; }
+.md-toolbar button:hover { border-color:#7a7ad0; color:#2d2d6e; }
+.md { font-size:13.5px; line-height:1.7; color:#333; }
+.md strong { font-weight:800; color:#1a1a2e; }
+.md em { font-style:italic; }
+.md code { background:#f0f2f7; padding:1px 5px; border-radius:4px; font-size:12.5px; }
+.md ul,.md ol { margin:4px 0 4px 22px; padding:0; }
+.md li { margin:2px 0; }
+.md h2,.md h3,.md h4,.md h5 { margin:7px 0 3px; font-weight:800; line-height:1.4; }
+.md h2 { font-size:15px; } .md h3 { font-size:14px; } .md h4,.md h5 { font-size:13px; }
+.md a { color:#5a5ad0; }
+.md .mb { height:8px; }
+
+/* notes browser */
+.notes-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+.notes-toolbar input.search { flex:1; min-width:160px; padding:10px 13px; border:1px solid #d8dae5; border-radius:10px; font-size:13.5px; }
+.note-card { background:#fff; border-radius:13px; padding:16px 18px; box-shadow:0 3px 16px rgba(0,0,0,.05); margin-bottom:12px; border-left:4px solid #e8c56b; }
+.note-card .nc-tags { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:9px; }
+.note-card .nc-time { font-size:11px; color:#bbb; margin-left:auto; }
+.note-card .nc-note { font-size:14px; color:#3a2f00; background:#fffdf3; border:1px solid #f0e6c0; border-radius:9px; padding:10px 12px; line-height:1.7; white-space:pre-wrap; max-height:220px; overflow:auto; }
+.note-card .nc-q { font-size:12.5px; color:#666; margin-top:9px; line-height:1.6; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.note-card .nc-acts { display:flex; gap:7px; flex-wrap:wrap; margin-top:11px; }
+.notes-empty { text-align:center; color:#999; font-size:13px; padding:40px 10px; }
+@media (max-width:760px){
+  #note-modal-box { width:100vw; height:100vh; border-radius:0; }
+  #note-modal-ta { font-size:16px; }
+}
 .qnav { display:flex; gap:11px; margin-top:18px; }
 .qnav button { flex:1; border:none; padding:13px; border-radius:11px; font-size:14.5px; font-weight:800; cursor:pointer; }
 .qnav .next { background:#2d2d6e; color:#fff; } .qnav .next.ghost { background:#eef0f5; color:#999; }
@@ -796,11 +844,32 @@ renderSidebar();
     <button class="tab" data-tab="drill" onclick="hubTab('drill')">🎯 刷题</button>
     <button class="tab" data-tab="mock" onclick="hubTab('mock')">📝 模拟考</button>
     <button class="tab" data-tab="cards" onclick="hubTab('cards')">🔢 数字速记</button>
+    <button class="tab" data-tab="notes" onclick="hubTab('notes')">📒 笔记</button>
     <button class="tab" data-tab="dash" onclick="hubTab('dash')">📊 数据面板</button>
     <button class="hub-x" onclick="closeHub()">✕ 退出</button>
   </div>
   <div id="hub-bar"></div>
   <div id="hub-body"><div class="hub-wrap" id="hub-wrap"></div></div>
+</div>
+
+<div id="note-modal">
+  <div id="note-modal-box">
+    <div id="note-modal-top">
+      <span id="note-modal-title">笔记</span>
+      <button class="drill-x" onclick="closeNoteEditor()">✕ 完成</button>
+    </div>
+    <div id="note-modal-toolbar">
+      <button type="button" onmousedown="return false" onclick="mdCmd(document.getElementById('note-modal-ta'),'bold')">B 加粗</button>
+      <button type="button" onmousedown="return false" onclick="mdCmd(document.getElementById('note-modal-ta'),'italic')">斜体</button>
+      <button type="button" onmousedown="return false" onclick="mdCmd(document.getElementById('note-modal-ta'),'ul')">• 列表</button>
+      <button type="button" onmousedown="return false" onclick="mdCmd(document.getElementById('note-modal-ta'),'ol')">1. 编号</button>
+      <button type="button" onmousedown="return false" onclick="mdCmd(document.getElementById('note-modal-ta'),'h')"># 标题</button>
+    </div>
+    <textarea id="note-modal-ta" placeholder="在这里写长笔记，自动保存…支持加粗/列表，粘贴保留原格式" onpaste="mdPaste(event,this)" oninput="saveNoteModal()"></textarea>
+    <div id="note-modal-prev-label">预览</div>
+    <div id="note-modal-prev" class="md"></div>
+    <div id="note-modal-meta"></div>
+  </div>
 </div>
 
 <script>
@@ -828,6 +897,91 @@ function S(){
 function save(d){ d.lastModified=Date.now(); try{ localStorage.setItem(SKEY, JSON.stringify(d)); }catch(e){} scheduleSync(); }
 function _writeLocal(d){ try{ localStorage.setItem(SKEY, JSON.stringify(d)); }catch(e){} }
 
+/* 笔记格式兼容：旧版是纯字符串，新版是 {text,ts} */
+function noteText(d,id){ var n=(d||S()).notes[id]; if(n==null)return ''; return (typeof n==='object')?(n.text||''):String(n); }
+function noteTs(d,id){ var n=(d||S()).notes[id]; return (n&&typeof n==='object')?(n.ts||0):0; }
+function hasNote(d,id){ return noteText(d,id).trim().length>0; }
+function fmtDate(ts){ if(!ts)return ''; var t=new Date(ts); return (t.getMonth()+1)+'/'+t.getDate()+' '+('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2); }
+function autoGrow(el){ if(!el)return; el.style.height='auto'; el.style.height=Math.min(el.scrollHeight+2,520)+'px'; }
+
+/* ---------- 轻量 Markdown：渲染 + 粘贴转换 ---------- */
+function mdToHtml(src){
+  if(src==null||src==='') return '';
+  function inline(s){
+    s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+    s=s.replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>');
+    s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
+    s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return s;
+  }
+  var lines=escapeHtml(src).split('\n'), out=[], list=null;
+  function closeList(){ if(list){ out.push('</'+list+'>'); list=null; } }
+  for(var i=0;i<lines.length;i++){
+    var t=lines[i].replace(/\s+$/,'');
+    var mH=/^(#{1,4})\s+(.*)$/.exec(t), mU=/^\s*[-*•]\s+(.*)$/.exec(t), mO=/^\s*\d+\.\s+(.*)$/.exec(t);
+    if(mH){ closeList(); var lv=Math.min(mH[1].length+1,5); out.push('<h'+lv+'>'+inline(mH[2])+'</h'+lv+'>'); }
+    else if(mU){ if(list!=='ul'){ closeList(); out.push('<ul>'); list='ul'; } out.push('<li>'+inline(mU[1])+'</li>'); }
+    else if(mO){ if(list!=='ol'){ closeList(); out.push('<ol>'); list='ol'; } out.push('<li>'+inline(mO[1])+'</li>'); }
+    else if(t.trim()===''){ closeList(); out.push('<div class="mb"></div>'); }
+    else { closeList(); out.push('<div>'+inline(t)+'</div>'); }
+  }
+  closeList(); return out.join('');
+}
+function htmlToMd(html){
+  var div=document.createElement('div'); div.innerHTML=html||'';
+  function walk(node){
+    var out='';
+    for(var i=0;i<node.childNodes.length;i++){
+      var n=node.childNodes[i];
+      if(n.nodeType===3){ out+=(n.nodeValue||'').replace(/\s+/g,' '); }
+      else if(n.nodeType===1){
+        var tag=n.tagName.toLowerCase(), inner=walk(n);
+        var fw=(n.style&&n.style.fontWeight)||''; var bold=(tag==='strong'||tag==='b'||fw==='bold'||parseInt(fw,10)>=600);
+        var ital=(tag==='em'||tag==='i'||(n.style&&n.style.fontStyle==='italic'));
+        if(tag==='br'){ out+='\n'; }
+        else if(tag==='p'||tag==='div'){ out+=(inner.trim()?inner.trim():'')+'\n\n'; }
+        else if(/^h[1-6]$/.test(tag)){ if(inner.trim())out+='## '+inner.trim()+'\n\n'; }
+        else if(tag==='li'){ var ol=n.parentNode&&n.parentNode.tagName&&n.parentNode.tagName.toLowerCase()==='ol'; out+=(ol?'1. ':'- ')+inner.trim()+'\n'; }
+        else if(tag==='ul'||tag==='ol'){ out+=inner+'\n'; }
+        else if(tag==='a'){ var href=n.getAttribute('href')||''; out+=(href&&/^https?:/.test(href))?('['+inner.trim()+']('+href+')'):inner; }
+        else if(bold){ out+=inner.trim()?('**'+inner.trim()+'**'):''; }
+        else if(ital){ out+=inner.trim()?('*'+inner.trim()+'*'):''; }
+        else { out+=inner; }
+      }
+    }
+    return out;
+  }
+  return walk(div).replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function mdToolbarHtml(taId){
+  var g="document.getElementById('"+taId+"')";
+  return '<div class="md-toolbar">'+
+    '<button type="button" onmousedown="return false" onclick="mdCmd('+g+",'bold')\">B 加粗</button>"+
+    '<button type="button" onmousedown="return false" onclick="mdCmd('+g+",'italic')\">斜体</button>"+
+    '<button type="button" onmousedown="return false" onclick="mdCmd('+g+",'ul')\">• 列表</button>"+
+    '<button type="button" onmousedown="return false" onclick="mdCmd('+g+",'ol')\">1. 编号</button>"+
+    '<button type="button" onmousedown="return false" onclick="mdCmd('+g+",'h')\"># 标题</button>"+
+  '</div>';
+}
+function mdCmd(el, cmd){
+  if(!el)return; var s=el.selectionStart||0, en=el.selectionEnd||0, v=el.value, sel=v.slice(s,en), out=sel;
+  if(cmd==='bold') out='**'+(sel||'加粗文字')+'**';
+  else if(cmd==='italic') out='*'+(sel||'斜体')+'*';
+  else if(cmd==='ul') out=(sel||'列表项').split('\n').map(function(l){return l.trim()?'- '+l:l;}).join('\n');
+  else if(cmd==='ol'){ var k=0; out=(sel||'列表项').split('\n').map(function(l){return l.trim()?(++k)+'. '+l:l;}).join('\n'); }
+  else if(cmd==='h') out='## '+(sel||'标题');
+  el.value=v.slice(0,s)+out+v.slice(en); el.focus(); el.selectionStart=s; el.selectionEnd=s+out.length;
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+}
+function mdPaste(e, el){
+  var cd=e.clipboardData||window.clipboardData; if(!cd||!el)return;
+  var html=cd.getData('text/html'); var ins=html?htmlToMd(html):cd.getData('text/plain');
+  if(ins==null||ins==='')return; e.preventDefault();
+  var s=el.selectionStart||0, en=el.selectionEnd||0, v=el.value;
+  el.value=v.slice(0,s)+ins+v.slice(en); var p=s+ins.length; el.selectionStart=el.selectionEnd=p;
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+}
+
 /* ---------- 云同步 cloud sync (同源 /api/sync 后端) ---------- */
 var SYNC_CFG='hksi_sync_cfg';
 var SYNC_API='/api/sync';   // 同源后端(Vercel 函数),无跨域问题
@@ -840,8 +994,9 @@ function updateSyncUI(msg){ _lastSyncMsg=msg; var el=document.getElementById('sy
 function mergeStore(a,b){
   a=a||{}; b=b||{}; var out=JSON.parse(JSON.stringify(a));
   out.qstats=out.qstats||{}; out.notes=out.notes||{}; out.stars=out.stars||{}; out.flags=out.flags||{}; out.wrong=out.wrong||{}; out.days=out.days||{};
-  // notes: keep longer text on conflict
-  var bn=b.notes||{}; Object.keys(bn).forEach(function(id){ if(!out.notes[id] || (bn[id]&&String(bn[id]).length>String(out.notes[id]).length)) out.notes[id]=bn[id]; });
+  // notes: 较新(ts大)优先；ts相同则较长优先（兼容旧字符串格式）
+  var bn=b.notes||{}; var _ntxt=function(n){ return n==null?'':(typeof n==='object'?(n.text||''):String(n)); }; var _nts=function(n){ return (n&&typeof n==='object')?(n.ts||0):0; };
+  Object.keys(bn).forEach(function(id){ var lv=out.notes[id], rv=bn[id]; if(!lv){ out.notes[id]=rv; return; } var lt=_nts(lv), rt=_nts(rv); if(rt>lt) out.notes[id]=rv; else if(rt===lt && _ntxt(rv).length>_ntxt(lv).length) out.notes[id]=rv; });
   // sets union
   ['stars','flags','wrong'].forEach(function(k){ var bk=b[k]||{}; Object.keys(bk).forEach(function(id){ out[k][id]=1; }); });
   // qstats: take entry with more attempts
@@ -949,6 +1104,7 @@ function hubTab(tab){
   if(tab==='drill') renderDrillSetup();
   else if(tab==='mock') renderMockSetup();
   else if(tab==='cards') renderCards();
+  else if(tab==='notes') renderNotes();
   else if(tab==='dash') renderDash();
 }
 function setBar(html){ document.getElementById('hub-bar').innerHTML=html; }
@@ -974,20 +1130,104 @@ function qTags(q, extra){
 /* ---------- per-question tools ---------- */
 function qToolsBar(q){
   var d=S();
-  var star=d.stars[q.id]?' on':'', flag=d.flags[q.id]?' on':'', note=d.notes[q.id]?' on':'';
+  var star=d.stars[q.id]?' on':'', flag=d.flags[q.id]?' on':'', note=hasNote(d,q.id)?' on':'';
   var h='<div class="qtools">';
   h+='<button class="qtool'+star+'" id="tool-star" onclick="toggleStar(\''+q.id+'\')">'+(d.stars[q.id]?'★ 已收藏':'☆ 收藏')+'</button>';
   h+='<button class="qtool'+note+'" id="tool-note" onclick="toggleNote(\''+q.id+'\')">📝 笔记</button>';
   h+='<button class="qtool'+flag+'" id="tool-flag" onclick="toggleFlag(\''+q.id+'\')">'+(d.flags[q.id]?'⚑ 已标存疑':'⚐ 标存疑')+'</button>';
   if(q.chId) h+='<button class="qtool link" onclick="jumpQ(\''+q.id+'\')">📖 复习此知识点'+(q.secNum?'（'+q.secNum+'）':'')+'</button>';
   h+='</div>';
-  h+='<div class="notebox" id="notebox-'+q.id+'" style="display:'+(d.notes[q.id]?'block':'none')+'"><textarea id="note-'+q.id+'" placeholder="写点笔记，自动保存…" oninput="saveNote(\''+q.id+'\')">'+(d.notes[q.id]?escapeHtml(d.notes[q.id]):'')+'</textarea></div>';
+  var txt=noteText(d,q.id);
+  h+='<div class="notebox" id="notebox-'+q.id+'" style="display:'+(hasNote(d,q.id)?'block':'none')+'">'+
+     '<div class="note-head"><span class="note-meta" id="note-meta-'+q.id+'">'+noteMetaStr(d,q.id)+'</span><button class="qtool" onclick="openNoteEditor(\''+q.id+'\')">⤢ 全屏编辑</button></div>'+
+     mdToolbarHtml('note-'+q.id)+
+     '<textarea class="note-ta" id="note-'+q.id+'" placeholder="写点笔记，自动保存…支持加粗/列表，粘贴保留格式" onpaste="mdPaste(event,this)" oninput="saveNote(\''+q.id+'\');autoGrow(this)">'+escapeHtml(txt)+'</textarea></div>';
   return h;
 }
+function noteMetaStr(d,id){ if(!hasNote(d,id))return ''; var t=noteText(d,id); var ts=noteTs(d,id); return t.length+' 字'+(ts?' · '+fmtDate(ts):''); }
 function toggleStar(id){ var d=S(); if(d.stars[id])delete d.stars[id]; else d.stars[id]=1; save(d); var b=document.getElementById('tool-star'); if(b){ b.classList.toggle('on',!!d.stars[id]); b.innerHTML=d.stars[id]?'★ 已收藏':'☆ 收藏'; } }
 function toggleFlag(id){ var d=S(); if(d.flags[id])delete d.flags[id]; else d.flags[id]=1; save(d); var b=document.getElementById('tool-flag'); if(b){ b.classList.toggle('on',!!d.flags[id]); b.innerHTML=d.flags[id]?'⚑ 已标存疑':'⚐ 标存疑'; } }
-function toggleNote(id){ var nb=document.getElementById('notebox-'+id); if(!nb)return; nb.style.display=(nb.style.display==='none')?'block':'none'; if(nb.style.display==='block'){ var ta=document.getElementById('note-'+id); if(ta)ta.focus(); } }
-function saveNote(id){ var ta=document.getElementById('note-'+id); if(!ta)return; var d=S(); var v=ta.value.trim(); if(v)d.notes[id]=v; else delete d.notes[id]; save(d); var b=document.getElementById('tool-note'); if(b)b.classList.toggle('on',!!d.notes[id]); }
+function toggleNote(id){ var nb=document.getElementById('notebox-'+id); if(!nb)return; nb.style.display=(nb.style.display==='none')?'block':'none'; if(nb.style.display==='block'){ var ta=document.getElementById('note-'+id); if(ta){ autoGrow(ta); ta.focus(); } } }
+function saveNote(id){ var ta=document.getElementById('note-'+id); if(!ta)return; var d=S(); var v=ta.value; if(v.trim())d.notes[id]={text:v,ts:Date.now()}; else delete d.notes[id]; save(d); var b=document.getElementById('tool-note'); if(b)b.classList.toggle('on',hasNote(d,id)); var m=document.getElementById('note-meta-'+id); if(m)m.textContent=noteMetaStr(d,id); }
+
+/* 全屏笔记编辑器 */
+var _noteEditId=null;
+function openNoteEditor(id){
+  _noteEditId=id; var d=S(); var q=poolById(id);
+  document.getElementById('note-modal-title').textContent=(q?escapeHtml(q.q.slice(0,40))+(q.q.length>40?'…':''):'笔记');
+  var ta=document.getElementById('note-modal-ta'); ta.value=noteText(d,id);
+  document.getElementById('note-modal').classList.add('open');
+  updNoteModalMeta();
+  setTimeout(function(){ ta.focus(); },50);
+}
+function saveNoteModal(){
+  if(!_noteEditId)return; var ta=document.getElementById('note-modal-ta'); var d=S(); var v=ta.value;
+  if(v.trim())d.notes[_noteEditId]={text:v,ts:Date.now()}; else delete d.notes[_noteEditId]; save(d);
+  // 同步到内联输入框（若存在）
+  var inline=document.getElementById('note-'+_noteEditId); if(inline){ inline.value=v; autoGrow(inline); }
+  var m=document.getElementById('note-meta-'+_noteEditId); if(m)m.textContent=noteMetaStr(d,_noteEditId);
+  var tb=document.getElementById('tool-note'); if(tb)tb.classList.toggle('on',hasNote(d,_noteEditId));
+  updNoteModalMeta();
+}
+function updNoteModalMeta(){ var ta=document.getElementById('note-modal-ta'); var m=document.getElementById('note-modal-meta'); if(m&&ta)m.textContent=ta.value.length+' 字 · 自动保存'; var pv=document.getElementById('note-modal-prev'); if(pv&&ta)pv.innerHTML=mdToHtml(ta.value)||'<span style="color:#bbb">（预览）</span>'; }
+function closeNoteEditor(){ document.getElementById('note-modal').classList.remove('open'); _noteEditId=null; if(curTab==='notes') renderNotes(); }
+
+/* ===================== 📒 笔记本 NOTES BROWSER ===================== */
+function notedIds(d){ d=d||S(); return Object.keys(d.notes).filter(function(id){ return hasNote(d,id); }); }
+var _notesSort='recent';
+function renderNotes(){
+  setBar('');
+  var d=S(), ids=notedIds(d);
+  var total=ids.length;
+  setBar('<span class="ds">共 <b>'+total+'</b> 条笔记</span>');
+  var q=(document.getElementById('notes-search')||{}).value||'';
+  var toolbar='<div class="card"><h3>📒 我的笔记</h3><div class="hint">所有刷题时写的笔记都在这里，可搜索、回看原题、跳转知识点。</div>'+
+    '<div class="notes-toolbar">'+
+    '<input class="search" id="notes-search" placeholder="🔍 搜索笔记或题目…" value="'+escapeHtml(q)+'" oninput="renderNotesList()">'+
+    '<div class="seg" id="notes-sort"><button class="'+(_notesSort==='recent'?'on':'')+'" data-v="recent" onclick="setNotesSort(\'recent\')">最近编辑</button><button class="'+(_notesSort==='chapter'?'on':'')+'" data-v="chapter" onclick="setNotesSort(\'chapter\')">按章节</button></div>'+
+    '</div></div>';
+  wrap(toolbar+'<div id="notes-list"></div>');
+  renderNotesList();
+}
+function setNotesSort(s){ _notesSort=s; var seg=document.getElementById('notes-sort'); if(seg)seg.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===s);}); renderNotesList(); }
+function renderNotesList(){
+  var d=S(), kw=((document.getElementById('notes-search')||{}).value||'').trim().toLowerCase();
+  var rows=notedIds(d).map(function(id){ var q=poolById(id); return {id:id, q:q, text:noteText(d,id), ts:noteTs(d,id)}; });
+  if(kw) rows=rows.filter(function(r){ return r.text.toLowerCase().indexOf(kw)>=0 || (r.q&&r.q.q.toLowerCase().indexOf(kw)>=0); });
+  if(_notesSort==='recent') rows.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+  else rows.sort(function(a,b){ var ca=(a.q&&a.q.chId)||99, cb=(b.q&&b.q.chId)||99; return ca-cb || (b.ts||0)-(a.ts||0); });
+  var el=document.getElementById('notes-list'); if(!el)return;
+  if(!rows.length){ el.innerHTML='<div class="notes-empty">'+(kw?'没有匹配的笔记':'还没有笔记。刷题时点「📝 笔记」就能写，会出现在这里。')+'</div>'; return; }
+  var html='';
+  rows.forEach(function(r){
+    var q=r.q||{q:'(题目已不在题库)',chId:null};
+    var tags='';
+    if(q.src) tags+='<span class="tg src">'+(SRC_LABELS[q.src]||q.src)+'</span>';
+    if(q.chTitle) tags+='<span class="tg ch">第'+q.chId+'章'+(q.secNum?(' '+q.secNum):'')+'</span>';
+    html+='<div class="note-card">'+
+      '<div class="nc-tags">'+tags+'<span class="nc-time">'+(r.ts?fmtDate(r.ts):'')+'</span></div>'+
+      '<div class="nc-note md">'+mdToHtml(r.text)+'</div>'+
+      '<div class="nc-q">📄 '+escapeHtml(q.q)+'</div>'+
+      '<div class="nc-acts">'+
+        '<button class="qtool" onclick="openNoteEditor(\''+r.id+'\')">✏️ 编辑</button>'+
+        (r.q?'<button class="qtool link" onclick="noteViewQuestion(\''+r.id+'\')">📖 看原题与解析</button>':'')+
+        (q.chId?'<button class="qtool" onclick="jumpQ(\''+r.id+'\')">🔗 跳到小节</button>':'')+
+        '<button class="qtool" style="color:#c0392b;border-color:#f0bcb4" onclick="deleteNote(\''+r.id+'\')">🗑 删除</button>'+
+      '</div></div>';
+  });
+  el.innerHTML=html;
+}
+function deleteNote(id){ if(!confirm('删除这条笔记？')) return; var d=S(); delete d.notes[id]; save(d); renderNotes(); }
+function noteViewQuestion(id){
+  var q=poolById(id); if(!q){ renderNotes(); return; }
+  setBar('<button class="hub-x" style="background:#eef0f5;color:#666" onclick="renderNotes()">← 返回笔记</button>');
+  var L=['A','B','C','D'], opts='';
+  for(var i=0;i<q.opts.length;i++){ var cls='opt'; if(L[i]===q.ans)cls+=' correct'; opts+='<button class="'+cls+'" disabled><span class="ol">'+L[i]+'</span>'+escapeHtml(q.opts[i]||'')+'</button>'; }
+  wrap('<div class="qcard"><div class="qtags">'+qTags(q)+'</div><div class="qtext">'+hlText(q.q)+'</div>'+opts+
+    '<div class="res correct">正确答案：('+q.ans+')<div class="exp"><div class="exp-hdr">📖 解题思路</div>'+escapeHtml(q.exp||('正确答案：('+q.ans+')'))+'</div></div>'+sourceBlock(q)+
+    qToolsBar(q)+
+    '<div class="qnav"><button class="next" onclick="renderNotes()">← 返回笔记列表</button></div></div>');
+}
 function sourceBlock(q){
   if(!q.secHtml) return (q.chId? '<div class="exp" style="background:#eef5ff;border-left-color:#5a8fd0;color:#234"><div class="exp-hdr" style="color:#3a6fb0">📚 相关知识点</div>本题归入「第'+q.chId+'章 '+CH_TITLES[q.chId]+'」（新题为关键词预估归章）。点下方「复习此知识点」查看该章原文。</div>':'');
   var summ = q.secSummary ? '<div style="margin-top:7px;padding-top:7px;border-top:1px dashed #c4d4ec"><b>💡 简释：</b>'+escapeHtml(q.secSummary)+'</div>' : '';
@@ -1022,7 +1262,7 @@ function renderDrillSetup(){
   order.forEach(function(s){ if(!counts[s])return; srcHtml+='<label class="on" data-src="'+s+'" onclick="dToggleSrc(this)"><input type="checkbox" checked>'+SRC_LABELS[s]+' <span class="cnt">'+counts[s]+'</span></label>'; });
   var chOpts='<option value="all">全部章节</option>';
   for(var i=1;i<=9;i++) chOpts+='<option value="'+i+'">第'+i+'章 '+CH_TITLES[i]+'</option>';
-  var wrongN=Object.keys(d.wrong).length, starN=Object.keys(d.stars).length, flagN=Object.keys(d.flags).length, noteN=Object.keys(d.notes).length;
+  var wrongN=Object.keys(d.wrong).length, starN=Object.keys(d.stars).length, flagN=Object.keys(d.flags).length, noteN=notedIds(d).length;
   var h='<div class="card"><h3>🎯 刷题设置</h3><div class="hint">每次一题，作答后立即看对错与解析；进度、错题、笔记自动保存在本机。</div>'+
     '<div class="fgrp"><div class="lbl">📚 题库来源</div><div class="chk" id="d-src">'+srcHtml+'</div></div>'+
     '<div class="fgrp"><div class="lbl">📖 章节 <span style="font-weight:400;color:#aaa;font-size:11px">(新题为关键词预估归章)</span></div><select class="sel" id="d-ch" onchange="dRefresh()">'+chOpts+'</select></div>'+
@@ -1050,7 +1290,7 @@ function drillFilter(){
     if(scope==='wrong' && !d.wrong[q.id])return false;
     if(scope==='star' && !d.stars[q.id])return false;
     if(scope==='flag' && !d.flags[q.id])return false;
-    if(scope==='note' && !d.notes[q.id])return false;
+    if(scope==='note' && !hasNote(d,q.id))return false;
     if(scope==='srs'){ var st=d.qstats[q.id]; if(d.wrong[q.id])return true; if(!st)return false; if(st.c/st.n>=1 && (Date.now()-st.lastTs)<86400000*3)return false; return true; }
     return true;
   });
@@ -1290,7 +1530,7 @@ function renderDash(){
     '<div class="card"><h3>📊 分章掌握度 <span style="font-weight:400;font-size:11px;color:#aaa">（权重为预估，非官方）</span></h3>'+bars+focusHtml+'</div>'+
 
     syncCard()+
-    '<div class="card"><h3>⚙️ 数据管理</h3><div class="hint">错题 '+Object.keys(d.wrong).length+' · 收藏 '+Object.keys(d.stars).length+' · 存疑 '+Object.keys(d.flags).length+' · 笔记 '+Object.keys(d.notes).length+' · 模拟考 '+d.mockHistory.length+' 次</div>'+
+    '<div class="card"><h3>⚙️ 数据管理</h3><div class="hint">错题 '+Object.keys(d.wrong).length+' · 收藏 '+Object.keys(d.stars).length+' · 存疑 '+Object.keys(d.flags).length+' · 笔记 '+notedIds(d).length+' · 模拟考 '+d.mockHistory.length+' 次</div>'+
       '<button class="qtool" onclick="exportData()">📤 导出进度</button> <button class="qtool" onclick="document.getElementById(\'import-file\').click()">📥 导入进度(合并)</button> <button class="qtool" onclick="resetStudy()" style="color:#c0392b;border-color:#f0bcb4">🗑 清空全部记录</button>'+
       '<input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importData(this)"></div>');
 }
