@@ -1,0 +1,8 @@
+com.hksi.study:style/AppTheme = 0x7f040000
+com.hksi.study:mipmap/ic_launcher_round = 0x7f030001
+com.hksi.study:xml/network_security_config = 0x7f050000
+com.hksi.study:color/white = 0x7f010002
+com.hksi.study:drawable/ic_launcher_foreground = 0x7f020000
+com.hksi.study:mipmap/ic_launcher = 0x7f030000
+com.hksi.study:color/paper = 0x7f010001
+com.hksi.study:color/navy = 0x7f010000

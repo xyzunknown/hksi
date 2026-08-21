@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.hksi.study.app-mergeReleaseResources-2:/values-v27/values-v27.xml",
+            "map": [
+                {
+                    "source": "/Users/xyz/Documents/HKSI/android-app/app/src/main/res/values-v27/styles.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "10",
+                        "endColumns": "12",
+                        "endOffsets": "579"
+                    }
+                }
+            ]
+        }
+    ]
+}

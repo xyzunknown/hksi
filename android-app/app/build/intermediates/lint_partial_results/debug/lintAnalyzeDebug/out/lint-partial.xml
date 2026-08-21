@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.12.1" type="partial_results">
+    <map id="UnsafeImplicitIntentLaunch">
+            <map id="actionsSent">
+                    <map id="android.intent.action.VIEW (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/hksi/study/MainActivity.java"
+                            line="85"
+                            column="35"
+                            startOffset="3355"
+                            endLine="85"
+                            endColumn="70"
+                            endOffset="3390"/>
+                    </map>
+            </map>
+    </map>
+    <map id="UnsafeIntentLaunch">
+            <map id="unprotected">
+                <entry
+                    name="com.hksi.study.MainActivity"
+                    boolean="true"/>
+            </map>
+    </map>
+    <map id="UnusedResources">
+        <location id="R.color.white"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="5"
+            column="12"
+            startOffset="141"
+            endLine="5"
+            endColumn="24"
+            endOffset="153"/>
+        <location id="R.mipmap.ic_launcher_round"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/mipmap-anydpi-v26/ic_launcher_round.xml"
+            line="2"
+            column="1"
+            startOffset="39"
+            endLine="5"
+            endColumn="17"
+            endOffset="251"/>
+        <entry
+            name="model"
+            string="color[navy(U),paper(U),white(D)],drawable[ic_launcher_foreground(U)],mipmap[ic_launcher(U),ic_launcher_round(D)],style[AppTheme(U)],xml[network_security_config(U)];4^0^3,5^0^3,6^0^1;;;"/>
+    </map>
+
+</incidents>

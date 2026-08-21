@@ -1,0 +1,4 @@
+#Mon Aug 03 09:54:15 HKT 2026
+base.0=/Users/xyz/Documents/HKSI/android-app/app/build/intermediates/dex/release/mergeDexRelease/classes.dex
+path.0=classes.dex
+renamed.0=classes.dex

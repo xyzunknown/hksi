@@ -1,0 +1,59 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.hksi.study"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:3:5-67
+11-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:3:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:4:5-79
+12-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:4:22-76
+13
+14    <application
+14-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:6:5-24:19
+15        android:allowBackup="true"
+15-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:7:9-35
+16        android:debuggable="true"
+17        android:extractNativeLibs="false"
+18        android:icon="@mipmap/ic_launcher"
+18-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:8:9-43
+19        android:label="HKSI 学习助手"
+19-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:9:9-34
+20        android:networkSecurityConfig="@xml/network_security_config"
+20-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:10:9-69
+21        android:supportsRtl="true"
+21-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:11:9-35
+22        android:theme="@style/AppTheme"
+22-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:12:9-40
+23        android:usesCleartextTraffic="false" >
+23-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:13:9-45
+24        <activity
+24-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:14:9-23:20
+25            android:name="com.hksi.study.MainActivity"
+25-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:15:13-41
+26            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+26-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:16:13-90
+27            android:exported="true"
+27-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:17:13-36
+28            android:screenOrientation="portrait" >
+28-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:18:13-49
+29            <intent-filter>
+29-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:19:13-22:29
+30                <action android:name="android.intent.action.MAIN" />
+30-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:20:17-69
+30-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:20:25-66
+31
+32                <category android:name="android.intent.category.LAUNCHER" />
+32-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:21:17-77
+32-->/Users/xyz/Documents/HKSI/android-app/app/src/main/AndroidManifest.xml:21:27-74
+33            </intent-filter>
+34        </activity>
+35    </application>
+36
+37</manifest>

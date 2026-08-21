@@ -1,0 +1,18 @@
+[
+    {
+        "merged": "com.hksi.study.app-release-4:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.hksi.study.app-main-5:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.hksi.study.app-release-4:/xml_network_security_config.xml.flat",
+        "source": "com.hksi.study.app-main-5:/xml/network_security_config.xml"
+    },
+    {
+        "merged": "com.hksi.study.app-release-4:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.hksi.study.app-main-5:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.hksi.study.app-release-4:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.hksi.study.app-main-5:/drawable/ic_launcher_foreground.xml"
+    }
+]

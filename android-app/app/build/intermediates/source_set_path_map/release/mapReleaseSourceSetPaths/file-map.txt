@@ -1,0 +1,7 @@
+com.hksi.study.app-pngs-0 /Users/xyz/Documents/HKSI/android-app/app/build/generated/res/pngs/release
+com.hksi.study.app-resValues-1 /Users/xyz/Documents/HKSI/android-app/app/build/generated/res/resValues/release
+com.hksi.study.app-packageReleaseResources-2 /Users/xyz/Documents/HKSI/android-app/app/build/intermediates/incremental/release/packageReleaseResources/merged.dir
+com.hksi.study.app-packageReleaseResources-3 /Users/xyz/Documents/HKSI/android-app/app/build/intermediates/incremental/release/packageReleaseResources/stripped.dir
+com.hksi.study.app-release-4 /Users/xyz/Documents/HKSI/android-app/app/build/intermediates/merged_res/release/mergeReleaseResources
+com.hksi.study.app-main-5 /Users/xyz/Documents/HKSI/android-app/app/src/main/res
+com.hksi.study.app-release-6 /Users/xyz/Documents/HKSI/android-app/app/src/release/res
